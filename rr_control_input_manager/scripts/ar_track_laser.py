@@ -49,20 +49,18 @@ def compute_laser_cmd(target_position):
 
     print('target_position: ', target_position)
 
-    linear_servo_length = (target_position[0] - origin[0]) 
-    linear_servo_cmd = linear_servo_length / 25.4 / 6 * 180
+    l = np.dot(target_position - origin, x_axis) / np.dot(linear_axis, x_axis)
+    print('linear servo: ', l)
+    linear_servo_cmd = l / 25.4 / 6 * 180
 
     # compute the laser angle corresponding to the projected target vector 
-    vec = target_position - np.array([target_position[0], origin[1], origin[2]])
+    vec = target_position - origin - l * linear_axis
+    vec = vec / np.linalg.norm(vec)
     print('vec: ', vec)
-    # projected_vec = vec - (np.dot(vec, x_axis) * x_axis / np.linalg.norm(vec)) 
-    # # print(projected_vec)
-    # rad = np.arccos(np.dot(projected_vec, z_axis) / np.linalg.norm(projected_vec))
-    rad = np.arccos(np.dot(vec, np.array([0,0,1])) / np.linalg.norm(vec))
-    angle = rad/pi*180
+    A = np.dot(z_axis, vec)
+    B = np.dot(y_axis, vec)
+    angle = np.rad2deg(np.arctan2(B, A))
 
-    # compute the distance between target and laser x-y plane
-    dist = np.dot(vec, z_axis)
     return angle, linear_servo_cmd
        
 def main(args):
