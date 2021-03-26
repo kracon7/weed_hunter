@@ -29,13 +29,13 @@ def main(args):
 
     time_start = rospy.Time.now()
 
-    time.sleep(10)
+    time.sleep(2)
 
     while not rospy.is_shutdown():
 
         time_now = rospy.Time.now()
         # time_elap = time_now - time_start
-        write_twist_msg(twist_msg, [0.25, 0., 0., 0., 0., 0.])
+        write_twist_msg(twist_msg, [0.5, 0., 0., 0., 0., 0.])
         # if time_elap.to_sec < 5:
         #     write_twist_msg(twist_msg, [0.1, 0., 0., 0., 0., 0.5])
         # elif time_elap.to_sec < 10 and time_elap.to_sec < 5:
