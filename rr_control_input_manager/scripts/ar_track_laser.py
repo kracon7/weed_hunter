@@ -37,32 +37,7 @@ def ar_pose_cb(data, args):
             servo2_pub.publish(servo2_msg)
             laser_msg.data = 1
             laser_pub.publish(laser_msg)
-        else:
-            laser_msg.data = 0
-            laser_pub.publish(laser_msg)
 
-# def compute_laser_cmd(target_position):
-#     origin = np.array([37.87, -62.54, -141.75])
-#     linear_axis = np.array([0.9988,  0.0192,  -0.0451])
-#     x_axis = np.array([ 0.9995, -0.0190, -0.0235])
-#     y_axis = np.array([ 0.0171,  0.9969, -0.0768])
-#     z_axis = np.array([ 0.0249,  0.0763,  0.9968])
-
-#     print('target_position: ', target_position)
-
-#     l = np.dot(target_position - origin, x_axis) / np.dot(linear_axis, x_axis)
-#     print('linear servo: ', l)
-#     servo2_cmd = l / 25.4 / 6 * 180
-
-#     # compute the laser angle corresponding to the projected target vector 
-#     vec = target_position - origin - l * linear_axis
-#     vec = vec / np.linalg.norm(vec)
-#     print('vec: ', vec)
-#     A = np.dot(z_axis, vec)
-#     B = np.dot(y_axis, vec)
-#     angle = np.rad2deg(np.arctan2(B, A))
-
-#     return angle, servo2_cmd
 
 def compute_laser_cmd(target):
     # rotation axis e1
