@@ -14,12 +14,10 @@ from sympy import *
 TARGETS = []
 
 def ar_pose_cb(data, args):
-    laser_pub = args[0]
-    laser_msg = args[1]
-    servo1_pub = args[2]
-    servo1_msg = args[3]
-    servo2_pub = args[4]
-    servo2_msg = args[5]
+    servo1_pub = args[0]
+    servo1_msg = args[1]
+    servo2_pub = args[2]
+    servo2_msg = args[3]
     # if ar marker is detected
     if len(data.markers) > 0:
         # convert unit from m to mm
@@ -29,15 +27,27 @@ def ar_pose_cb(data, args):
         target_position = np.array([x, y, z])
         angle_1, angle_2 = compute_laser_cmd(target_position)
         
+        # if target is within the range of the actuator
         if angle_1 is not None:
             rospy.loginfo('Found target at {:.3f} degree and {:.3f} degree'.format(angle_1, angle_2))
-            servo1_msg.data = angle_1
-            servo1_pub.publish(servo1_msg)
-            servo2_msg.data = angle_2
-            servo2_pub.publish(servo2_msg)
-            laser_msg.data = 1
-            laser_pub.publish(laser_msg)
+            
+            # if target if close to the laser plane, turn the laser off
+            if np.abs(angle_1 - 30) < 5:
+                rospy.loginfo('Target close to laser plane, turnning laser off')
+                # servo1_msg.data = 30
+                # servo1_pub.publish(servo2_msg)
+                servo2_msg.data = angle_2
+                servo2_pub.publish(servo2_msg)
+                rospy.set_param('laser_cmd', 0)
+            else:
+                rospy.set_param('laser_cmd', 1)
+        # else:
+        #     print('No valid sol found')
+        #     rospy.set_param('laser_cmd', 1)
 
+    else:
+        rospy.set_param('laser_cmd', 1)
+                
 
 def compute_laser_cmd(target):
     # rotation axis e1
@@ -98,8 +108,8 @@ def main(args):
     rospy.init_node('laser_controller')
     rate=rospy.Rate(10)
 
-    laser_pub = rospy.Publisher('/laser_cmd', Int32, queue_size=1)
-    laser_msg = Int32()
+    # async the laser cmd server with the actuation end using ros param
+    rospy.set_param('laser_cmd', 0)
 
     servo1_pub = rospy.Publisher('/servo1_angle', Float32, queue_size=1)
     servo1_msg = Float32()
@@ -108,8 +118,7 @@ def main(args):
     servo2_msg = Float32()
 
     ar_pose_sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, ar_pose_cb, 
-                                        [laser_pub, laser_msg, servo1_pub, servo1_msg, 
-                                         servo2_pub, servo2_msg])
+                                        [ servo1_pub, servo1_msg, servo2_pub, servo2_msg])
 
     time_start = rospy.Time.now()
 
