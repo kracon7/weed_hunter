@@ -166,10 +166,10 @@ y_button_msg.data=False
 
 # define publishers  
 pub = rospy.Publisher('/cmd_vel/joystick', TwistStamped, queue_size=3)
-a_button_pub = rospy.Publisher('/joystick/a_button', Bool, queue_size=1, latch=True)
-b_button_pub = rospy.Publisher('/joystick/b_button', Bool, queue_size=1, latch=True)
-x_button_pub = rospy.Publisher('/joystick/x_button', Bool, queue_size=1, latch=True)
-y_button_pub = rospy.Publisher('/joystick/y_button', Bool, queue_size=1, latch=True)
+a_button_pub = rospy.Publisher('/joystick/a_button', Bool, queue_size=1)
+b_button_pub = rospy.Publisher('/joystick/b_button', Bool, queue_size=1)
+x_button_pub = rospy.Publisher('/joystick/x_button', Bool, queue_size=1)
+y_button_pub = rospy.Publisher('/joystick/y_button', Bool, queue_size=1)
 pub_delay = rospy.Publisher('/joystick/delay', Float32, queue_size=3)
 pub_cancel_move_base = rospy.Publisher('/move_base/cancel', GoalID, queue_size=10)
 
