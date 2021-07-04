@@ -1,0 +1,19 @@
+<launch>
+    
+    <node pkg="rr_control_input_manager" type="corn_detection.py" name="corn_detection"  output="screen" >
+    </node>
+
+    <arg name="offline"          default="false"/>
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="align_depth" value="true"/>
+        <arg name="linear_accel_cov" value="1.0"/>
+        <arg name="enable_gyro" value="true"/>
+        <arg name="enable_accel" value="true"/>
+        <arg name="enable_infra1"  value="true"/>
+        <arg name="enable_infra2"  value="true"/>
+        <arg name="unite_imu_method" value="linear_interpolation"/>
+    </include>
+    
+
+</launch>

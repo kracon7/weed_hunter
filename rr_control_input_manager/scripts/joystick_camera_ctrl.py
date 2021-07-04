@@ -51,15 +51,15 @@ def record_cam(output_dir):
 
     device_manager = DeviceManager(rs.context(), config)
 
-    config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
 
-    config.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, 30)
-    config.enable_stream(rs.stream.infrared, 2, 1280, 720, rs.format.y8, 30)
+    config.enable_stream(rs.stream.infrared, 1, 848, 480, rs.format.y8, 30)
+    config.enable_stream(rs.stream.infrared, 2, 848, 480, rs.format.y8, 30)
 
     if device_product_line == 'L500':
         config.enable_stream(rs.stream.color, 1920, 1080, rs.format.rgb8, 30)
     else:
-        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+        config.enable_stream(rs.stream.color, 848, 480, rs.format.rgb8, 30)
 
     # Start streaming
     profile = pipeline.start(config)
@@ -95,14 +95,18 @@ def record_cam(output_dir):
             # Get aligned frames
             aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
             color_frame = aligned_frames.get_color_frame()
+            infrared_frame = aligned_frames.get_infrared_frame()
             
             depth_image = np.asanyarray(aligned_depth_frame.get_data()) * depth_scale
             color_image = np.asanyarray(color_frame.get_data())
+            infrared_image = np.asanyarray(infrared_frame.get_data())
+            
             elaps = time.time() - now
             print('Captured image %07d, took %f seconds'%(i, elaps))
             now = time.time()
             np.save(os.path.join(save_dir, 'color_%07d.npy'%(i)), color_image)
             np.save(os.path.join(save_dir, 'depth_%07d.npy'%(i)), depth_image)
+            np.save(os.path.join(save_dir, 'infrared_%07d.npy'%(i)), infrared_image)
 
             i += 1
     
@@ -110,7 +114,7 @@ def record_cam(output_dir):
         print('stopped')
         pipeline.stop()
 
-def abutton_cb(data, args):
+def xbutton_cb(data, args):
     global cam_process
     output_dir = args
     print(type(output_dir))
@@ -121,7 +125,7 @@ def abutton_cb(data, args):
     else:
         rospy.loginfo('Camera process is already running')
 
-def bbutton_cb(data):
+def ybutton_cb(data):
     global cam_process
     if cam_process.is_alive():
         cam_process.terminate()
@@ -137,8 +141,8 @@ def main(args):
     output_dir = args.output_dir
     global cam_process
     cam_process = mp.Process(target=record_cam, args=(output_dir,))
-    a_sub = rospy.Subscriber('/joystick/a_button', Bool, abutton_cb, (output_dir))
-    b_sub = rospy.Subscriber('/joystick/b_button', Bool, bbutton_cb)
+    a_sub = rospy.Subscriber('/joystick/x_button', Bool, xbutton_cb, (output_dir))
+    b_sub = rospy.Subscriber('/joystick/y_button', Bool, ybutton_cb)
 
     
     while not rospy.is_shutdown():

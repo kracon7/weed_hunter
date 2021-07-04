@@ -1,15 +1,5 @@
 #! /home/jc/Envs/py36/bin/python3.6
 
-import sys
-import os
-import argparse
-import rospy
-import numpy as np
-from sensor_msgs.msg import Image
-import pyrealsense2 as rs
-import matplotlib.pyplot as plt
-from PIL import Image as im
-
 name_to_dtypes = {
     "rgb8":    (np.uint8,  3),
     "rgba8":   (np.uint8,  4),
@@ -64,74 +54,74 @@ name_to_dtypes = {
 }
 
 
-def image_to_numpy(msg):
-    if not msg.encoding in name_to_dtypes:
-        raise TypeError('Unrecognized encoding {}'.format(msg.encoding))
+# def image_to_numpy(msg):
+#     if not msg.encoding in name_to_dtypes:
+#         raise TypeError('Unrecognized encoding {}'.format(msg.encoding))
     
-    dtype_class, channels = name_to_dtypes[msg.encoding]
-    dtype = np.dtype(dtype_class)
-    print(msg.encoding)
-    dtype = dtype.newbyteorder('>' if msg.is_bigendian else '<')
-    shape = (msg.height, msg.width, channels)
+#     dtype_class, channels = name_to_dtypes[msg.encoding]
+#     dtype = np.dtype(dtype_class)
+#     print(msg.encoding)
+#     dtype = dtype.newbyteorder('>' if msg.is_bigendian else '<')
+#     shape = (msg.height, msg.width, channels)
 
-    data = np.fromstring(msg.data, dtype=dtype).reshape(shape)
-    data.strides = (
-        msg.step,
-        dtype.itemsize * channels,
-        dtype.itemsize
-    )
+#     data = np.fromstring(msg.data, dtype=dtype).reshape(shape)
+#     data.strides = (
+#         msg.step,
+#         dtype.itemsize * channels,
+#         dtype.itemsize
+#     )
 
-    if channels == 1:
-        data = data[...,0]
-    return data
+#     if channels == 1:
+#         data = data[...,0]
+#     return data
 
 
-def save_jpg(array, path):
-    # creating image object of
-    # above array
-    data = im.fromarray(array)
+# def save_jpg(array, path):
+#     # creating image object of
+#     # above array
+#     data = im.fromarray(array)
       
-    # saving the final output 
-    # as a PNG file
-    data.save(path)
+#     # saving the final output 
+#     # as a PNG file
+#     data.save(path)
 
 
-def main(args):
+# def main(args):
 
-    if args.msg_type == 'color':
-        # create output dirs
-        color_dir = os.path.join(args.output_dir, 'color')
-        os.system('mkdir -p {}'.format(color_dir))
-    elif args.msg_type == 'depth':
-        depth_dir = os.path.join(args.output_dir, 'depth')
-        os.system('mkdir -p {}'.format(depth_dir))
+#     if args.msg_type == 'color':
+#         # create output dirs
+#         color_dir = os.path.join(args.output_dir, 'color')
+#         os.system('mkdir -p {}'.format(color_dir))
+#     elif args.msg_type == 'depth':
+#         depth_dir = os.path.join(args.output_dir, 'depth')
+#         os.system('mkdir -p {}'.format(depth_dir))
     
-    # plt.ion()
-    # fig, ax = plt.subplots(2,1)
+#     # plt.ion()
+#     # fig, ax = plt.subplots(2,1)
     
-    rospy.init_node('iamge_collection')
-    rospy.loginfo("testing virtual env")
-    rate=rospy.Rate(10)
+#     rospy.init_node('iamge_collection')
+#     rospy.loginfo("testing virtual env")
+#     rate=rospy.Rate(10)
 
-    count = 0
-    while True:
-        # get robot image data from ROS and convert to numpy array
-        if args.msg_type == 'color':
-            color_data = rospy.wait_for_message('/camera/color/image_raw', Image)
-            if color_data.data:
-                color_image = image_to_numpy(color_data)
-                save_jpg(color_image, os.path.join(color_dir, 'color_%d.jpg'%(count)))
+#     count = 0
+#     while True:
+#         # get robot image data from ROS and convert to numpy array
+#         if args.msg_type == 'color':
+#             color_data = rospy.wait_for_message('/camera/color/image_raw', Image)
+#             if color_data.data:
+#                 color_image = image_to_numpy(color_data)
+#                 save_jpg(color_image, os.path.join(color_dir, 'color_%d.jpg'%(count)))
 
-        elif args.msg_type == 'depth':
-            depth_data = rospy.wait_for_message('/camera/depth/image_rect_raw', Image)
+#         elif args.msg_type == 'depth':
+#             depth_data = rospy.wait_for_message('/camera/depth/image_rect_raw', Image)
         
-            if depth_data.data:
-                depth_image = image_to_numpy(depth_data)
-                # np.save(os.path.join(depth_dir, 'depth_%d.npy'%(count)), depth_image)
-                # cv2.imwrite(os.path.join(depth_dir, 'depth_%d.png'%(count)), depth_image)
-                save_jpg(depth_image, os.path.join(depth_dir, 'depth_%d.tif'%(count)))
+#             if depth_data.data:
+#                 depth_image = image_to_numpy(depth_data)
+#                 # np.save(os.path.join(depth_dir, 'depth_%d.npy'%(count)), depth_image)
+#                 # cv2.imwrite(os.path.join(depth_dir, 'depth_%d.png'%(count)), depth_image)
+#                 save_jpg(depth_image, os.path.join(depth_dir, 'depth_%d.tif'%(count)))
 
-        count += 1
+#         count += 1
 
 
 if __name__ == "__main__":
@@ -141,3 +131,44 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     main(args)
+
+
+import os
+import argparse
+
+import cv2
+
+import rosbag
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+
+def main():
+    """Extract a folder of images from a rosbag.
+    """
+    parser = argparse.ArgumentParser(description="Extract images from a ROS bag.")
+    parser.add_argument("bag_file", help="Input ROS bag.")
+    parser.add_argument("output_dir", help="Output directory.")
+    parser.add_argument("image_topic", help="Image topic.")
+
+    args = parser.parse_args()
+
+    print "Extract images from %s on topic %s into %s" % (args.bag_file,
+                                                          args.image_topic, args.output_dir)
+
+    bag = rosbag.Bag(args.bag_file, "r")
+    bridge = CvBridge()
+    count = 0
+    for topic, msg, t in bag.read_messages(topics=[args.image_topic]):
+        cv_img = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+
+        cv2.imwrite(os.path.join(args.output_dir, "frame%06i.png" % count), cv_img)
+        print "Wrote image %i" % count
+
+        count += 1
+
+    bag.close()
+
+    return
+
+if __name__ == '__main__':
+    main()
