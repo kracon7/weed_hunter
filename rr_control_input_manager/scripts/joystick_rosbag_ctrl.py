@@ -62,15 +62,28 @@ class record_channel(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run robot closeloop simulation for 2000 times')
     parser.add_argument('--output_dir', default='jiacheng/data', help='directory to store images')
+    parser.add_argument('--cam_type', default='dual', type=str, help='type of camera setup, dual or single')
     args = parser.parse_args()
 
     output_dir = args.output_dir
-    rostopics = ['/camera/aligned_depth_to_color/camera_info',
-                 '/camera/aligned_depth_to_color/image_raw',
-                 '/camera/color/camera_info',
-                 '/camera/color/image_raw',
-                 '/rr_openrover_basic/odom_encoder']
-    
+    if args.cam_type == 'single':
+        rostopics = ['/camera/aligned_depth_to_color/camera_info',
+                     '/camera/aligned_depth_to_color/image_raw',
+                     '/camera/color/camera_info',
+                     '/camera/color/image_raw',
+                     '/rr_openrover_basic/odom_encoder']
+    elif args.cam_type == "dual":
+        rostopics = ['/d435/aligned_depth_to_color/camera_info',
+                     '/d435/aligned_depth_to_color/image_raw',
+                     '/d435/color/camera_info',
+                     '/d435/color/image_raw',
+                     '/d455/aligned_depth_to_color/camera_info',
+                     '/d455/aligned_depth_to_color/image_raw',
+                     '/d455/color/camera_info',
+                     '/d455/color/image_raw',
+                     '/d455/imu',
+                     '/rr_openrover_basic/odom_encoder',
+                     '/rr_openrover_basic/vel_calc_pub']    
 
     # rostopics = ['/camera/aligned_depth_to_color/camera_info',
     #              '/camera/aligned_depth_to_color/image_raw',
