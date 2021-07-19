@@ -1,4 +1,4 @@
-#! /home/rsn/Env/py35/bin/python3.5
+#! /home/blades/env/py36/bin/python3.6
 
 import os
 import sys
