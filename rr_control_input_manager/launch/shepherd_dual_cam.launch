@@ -1,0 +1,29 @@
+<launch>
+    <arg name="offline"          default="false"/>
+    <arg name="d435_cloud"   default="false" />
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="serial_no"   value="033322070540"/>
+        <arg name="camera"     value="camera"/>
+        <arg name="align_depth" value="true"/>
+        <arg name="linear_accel_cov" value="1.0"/>  
+        
+        <arg name="gyro_fps"      value="400"/>
+        <arg name="accel_fps"     value="250"/>
+        <arg name="enable_gyro"   value="true"/>
+        <arg name="enable_accel"  value="true"/>
+
+        <arg name="unite_imu_method" value="linear_interpolation"/>
+    </include>
+    
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="serial_no"   value="817512070887"/>
+        <arg name="camera"     value="d435"/>
+        <arg name="align_depth" value="true"/>
+        <arg name="enable_pointcloud" value="$(arg d435_cloud)"/>
+        <arg name="enable_sync"       value="$(arg d435_cloud)"/>        
+
+    </include>
+    
+</launch>
