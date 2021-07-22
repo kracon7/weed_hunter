@@ -49,56 +49,68 @@ void *pcl_viewer(void *arg)
     }
 }
 
-void pointCloudCallback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input, 
-                        boost::shared_ptr<PointCloud>& globalCloud)
-{
-    geometry_msgs::TransformStamped transform;
-    sensor_msgs::PointCloud2 cloud_world;
-    try
-    {
-        transform = tf_buffer_.lookupTransform("/map", input->header.frame_id,
-                                            input->header.stamp, ros::Duration(0.1));
-        tf2::doTransform(*input, cloud_world, transform);
-    }
-    catch (tf2::TransformException& ex)
-    {
-        ROS_WARN("%s", ex.what());
-        return;
-    }
-
-    // Container for original & filtered data
-    pcl::PCLPointCloud2 pcl_pc2;
-    pcl_conversions::toPCL(cloud_world, pcl_pc2);
-    PointCloud::Ptr pcl_cloud(new PointCloud);
-    pcl::fromPCLPointCloud2(pcl_pc2, *pcl_cloud);
-
-    *globalCloud += *pcl_cloud;
-
-    ROS_INFO("I heard: [%d]", input->height);
-
-    sleep(1);
-}
 
 
-int main(int argc, char **argv)
+class PointCloudMerger
 {
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+    private:
+    std::string target_frame_;
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tfListener_;
+    ros::Subscriber sub;
 
+    public:
+    PointCloudMerger(ros::NodeHandle *nh):
+    tfListener_(tf_buffer_)
+    {
+        target_frame_ = "/map";
+        sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 1,
+                        &PointCloudMerger::pointCloudCallback, this);
+    }
+
+    void pointCloudCallback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)
+    {
+        geometry_msgs::TransformStamped transform;
+        sensor_msgs::PointCloud2 cloud_world;
+        try
+        {
+            transform = tf_buffer_.lookupTransform("/map", input->header.frame_id,
+                                    input->header.stamp, ros::Duration(0.1));
+            tf2::doTransform(*input, cloud_world, transform);
+        }
+        catch (tf2::TransformException& ex)
+        {
+            ROS_WARN("%s", ex.what());
+            return;
+        }
+
+        // Container for original & filtered data
+        pcl::PCLPointCloud2 pcl_pc2;
+        pcl_conversions::toPCL(cloud_world, pcl_pc2);
+        PointCloud::Ptr pcl_cloud(new PointCloud);
+        pcl::fromPCLPointCloud2(pcl_pc2, *pcl_cloud);
+
+        *globalCloud += *pcl_cloud;
+
+        ROS_INFO("I heard: [%d]", input->height);
+
+        sleep(1);
+    }
+
+};
+
+
+int main(int argc, char ** argv)
+{
     //create pcl viewer thread
     pthread_t pcl_thread;
     pthread_create(&pcl_thread, NULL, pcl_viewer, (void *)NULL);
 
-	ros::init(argc, argv, "pcd_listener");
-	ros::NodeHandle n;
+    ros::init(argc, argv, "pcd_listener");
+    ros::NodeHandle nh;
+    PointCloudMerger pm(&nh); //Construct class
+    ros::spin(); // Run until interupted 
+    return 0;
+};
 
-    tf2_ros::Buffer tf_buffer_;
-    tf2_ros::TransformListener tfListener(tf_buffer_);
-
-	ros::Subscriber sub = n.subscribe<sensor_msgs::PointCloud2>(
-        "/camera/depth_registered/points", 1, boost::bind(&pointCloudCallback, _1, globalCloud));
-	
-	ros::spin();
-	return 0;
-	
-    }
