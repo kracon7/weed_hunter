@@ -49,9 +49,10 @@ class record_channel(object):
     def ybutton_cb(self, data):
         if self.is_recording:
             rospy.loginfo('Killing the recording process...')
-            killcommand = "kill -9 " + str(self.p.pid)
-            rospy.loginfo(killcommand)
-            self.k = subprocess.Popen(killcommand, shell=True)
+            # killcommand = "kill -9 " + str(self.p.pid)
+            # rospy.loginfo(killcommand)
+            # self.k = subprocess.Popen(killcommand, shell=True)
+            subprocess.Popen(shlex.split("rosnode kill /bag_record"))
             rospy.loginfo("Recording has stopped")
             self.is_recording = False
 
@@ -94,6 +95,10 @@ if __name__ == '__main__':
                      '/d435/aligned_depth_to_color/image_raw',
                      '/d435/color/camera_info',
                      '/d435/color/image_raw',
+                     '/d435/infra1/camera_info',
+                     '/d435/infra1/image_rect_raw',
+                     '/d435/infra2/camera_info',
+                     '/d435/infra2/image_rect_raw',
                      '/camera/aligned_depth_to_color/camera_info',
                      '/camera/aligned_depth_to_color/image_raw',
                      '/camera/color/camera_info',
