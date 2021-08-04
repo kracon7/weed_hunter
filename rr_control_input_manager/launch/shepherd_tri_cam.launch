@@ -1,0 +1,43 @@
+<launch>
+    <arg name="offline"          default="false"/>
+    <arg name="d435_cloud"   default="false" />
+    <arg name="d435_infra" default="true" />
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="serial_no"   value="033322070540"/>
+        <arg name="camera"     value="camera"/>
+        <arg name="align_depth" value="true"/>
+        <arg name="linear_accel_cov" value="1.0"/>  
+        
+        <arg name="gyro_fps"      value="400"/>
+        <arg name="accel_fps"     value="250"/>
+        <arg name="enable_gyro"   value="true"/>
+        <arg name="enable_accel"  value="true"/>
+
+        <arg name="unite_imu_method" value="linear_interpolation"/>
+    </include>
+    
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="serial_no"   value="817512070887"/>
+        <arg name="camera"     value="d435"/>
+        <arg name="align_depth" value="true"/>
+        <arg name="enable_pointcloud" value="$(arg d435_cloud)"/>
+        <arg name="enable_sync"       value="$(arg d435_cloud)"/>        
+        <arg name="enable_infra"   value="$(arg d435_infra)" />
+        <arg name="enable_infra1"   value="$(arg d435_infra)" />
+        <arg name="enable_infra2"   value="$(arg d435_infra)" />
+    </include>
+
+    <include unless="$(arg offline)" 
+        file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="serial_no"   value="817412070608"/>
+        <arg name="camera"     value="front_d435"/>
+        <arg name="align_depth" value="true"/>        
+        <arg name="enable_infra"   value="$(arg d435_infra)" />
+        <arg name="enable_infra1"   value="$(arg d435_infra)" />
+        <arg name="enable_infra2"   value="$(arg d435_infra)" />
+    </include>
+    
+    <node pkg="tf" type="static_transform_publisher" name="cam_link_broadcaster" args="-0.454 0.059 -0.570 -1.5708 0.0 0.785 /camera_link /d435_link 1" />
+</launch>

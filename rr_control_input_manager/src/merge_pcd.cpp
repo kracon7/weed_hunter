@@ -59,43 +59,55 @@ class PointCloudMerger
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tfListener_;
     ros::Subscriber sub;
+    int counter;
+    int every_frames;
 
     public:
     PointCloudMerger(ros::NodeHandle *nh):
-    tfListener_(tf_buffer_)
+    tfListener_(tf_buffer_),
+    target_frame_("map")
+
     {
-        target_frame_ = "/map";
-        sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 1,
+        sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 70,
                         &PointCloudMerger::pointCloudCallback, this);
+        counter = 0;
+        every_frames = 5;
     }
 
     void pointCloudCallback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)
     {
-        geometry_msgs::TransformStamped transform;
-        sensor_msgs::PointCloud2 cloud_world;
-        try
+        // Process every certain frames
+        if(counter%every_frames == 0)
         {
-            transform = tf_buffer_.lookupTransform("/map", input->header.frame_id,
-                                    input->header.stamp, ros::Duration(0.1));
-            tf2::doTransform(*input, cloud_world, transform);
+            geometry_msgs::TransformStamped transform;
+            sensor_msgs::PointCloud2 cloud_world;
+            try
+            {
+                transform = tf_buffer_.lookupTransform(target_frame_, input->header.frame_id,
+                                        input->header.stamp, ros::Duration(1));
+                tf2::doTransform(*input, cloud_world, transform);
+            }
+            catch (tf2::TransformException& ex)
+            {
+                ROS_WARN("%s", ex.what());
+                return;
+            }
+
+            // Container for original & filtered data
+            pcl::PCLPointCloud2 pcl_pc2;
+            pcl_conversions::toPCL(cloud_world, pcl_pc2);
+            PointCloud::Ptr pcl_cloud(new PointCloud);
+            pcl::fromPCLPointCloud2(pcl_pc2, *pcl_cloud);
+
+            *globalCloud += *pcl_cloud;
+
+            ROS_INFO("Frame %d processed.", counter);
+
+            sleep(0.1);    
         }
-        catch (tf2::TransformException& ex)
-        {
-            ROS_WARN("%s", ex.what());
-            return;
-        }
 
-        // Container for original & filtered data
-        pcl::PCLPointCloud2 pcl_pc2;
-        pcl_conversions::toPCL(cloud_world, pcl_pc2);
-        PointCloud::Ptr pcl_cloud(new PointCloud);
-        pcl::fromPCLPointCloud2(pcl_pc2, *pcl_cloud);
-
-        *globalCloud += *pcl_cloud;
-
-        ROS_INFO("I heard: [%d]", input->height);
-
-        sleep(1);
+        counter++;
+        
     }
 
 };
