@@ -67,8 +67,15 @@ if __name__ == '__main__':
     # args = parser.parse_args()
     args, unknown = parser.parse_known_args()
 
+    if '/record_channel/cam_type' in rospy.get_param_names():
+        cam_type = rospy.get_param('/record_channel/cam_type')
+    else:
+        cam_type = args.cam_type
+
     output_dir = args.output_dir
-    if args.cam_type == 'single':
+
+    print('\n\n\n', cam_type, '\n\n\n')
+    if cam_type == 'single':
         rostopics = ['/camera/aligned_depth_to_color/camera_info',
                      '/camera/aligned_depth_to_color/image_raw',
                      '/camera/color/camera_info',
@@ -76,7 +83,7 @@ if __name__ == '__main__':
                      '/rr_openrover_basic/odom_encoder',
                      '/tf',
                      '/tf_static']
-    elif args.cam_type == "dual":
+    elif cam_type == "dual":
         rostopics = ['/d435/aligned_depth_to_color/camera_info',
                      '/d435/aligned_depth_to_color/image_raw',
                      '/d435/color/camera_info',
@@ -90,7 +97,7 @@ if __name__ == '__main__':
                      '/rr_openrover_basic/vel_calc_pub',
                      '/tf',
                      '/tf_static']   
-    elif args.cam_type == 'shepherd':
+    elif cam_type == 'shepherd':
         rostopics = ['/d435/aligned_depth_to_color/camera_info',
                      '/d435/aligned_depth_to_color/image_raw',
                      '/d435/color/camera_info',
@@ -99,6 +106,31 @@ if __name__ == '__main__':
                      '/d435/infra1/image_rect_raw',
                      '/d435/infra2/camera_info',
                      '/d435/infra2/image_rect_raw',
+                     '/camera/aligned_depth_to_color/camera_info',
+                     '/camera/aligned_depth_to_color/image_raw',
+                     '/camera/color/camera_info',
+                     '/camera/color/image_raw',
+                     '/camera/imu',
+                     '/rr_openrover_basic/odom_encoder',
+                     '/tf',
+                     '/tf_static']   
+    elif cam_type == 'tri':
+        rostopics = ['/d435/aligned_depth_to_color/camera_info',
+                     '/d435/aligned_depth_to_color/image_raw',
+                     '/d435/color/camera_info',
+                     '/d435/color/image_raw',
+                     '/d435/infra1/camera_info',
+                     '/d435/infra1/image_rect_raw',
+                     '/d435/infra2/camera_info',
+                     '/d435/infra2/image_rect_raw',
+                     '/front_d435/aligned_depth_to_color/camera_info',
+                     '/front_d435/aligned_depth_to_color/image_raw',
+                     '/front_d435/color/camera_info',
+                     '/front_d435/color/image_raw',
+                     '/front_d435/infra1/camera_info',
+                     '/front_d435/infra1/image_rect_raw',
+                     '/front_d435/infra2/camera_info',
+                     '/front_d435/infra2/image_rect_raw',
                      '/camera/aligned_depth_to_color/camera_info',
                      '/camera/aligned_depth_to_color/image_raw',
                      '/camera/color/camera_info',

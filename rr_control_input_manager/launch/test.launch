@@ -1,0 +1,12 @@
+<launch>
+    <arg name="recording" default="true" />
+    <arg name="cam_type" default="tri" />
+
+    <group if="$(arg recording)">
+        <node pkg="rr_control_input_manager" type="joystick_rosbag_ctrl.py" name="record_channel" output="screen">
+            <param name="cam_type" value="$(arg cam_type)" />
+        </node>
+    </group>
+    
+
+</launch>

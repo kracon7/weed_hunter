@@ -71,7 +71,7 @@ class PointCloudMerger
         sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 70,
                         &PointCloudMerger::pointCloudCallback, this);
         counter = 0;
-        every_frames = 5;
+        every_frames = 20;
     }
 
     void pointCloudCallback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)

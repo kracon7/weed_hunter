@@ -39,5 +39,20 @@
         <arg name="enable_infra2"   value="$(arg d435_infra)" />
     </include>
     
-    <node pkg="tf" type="static_transform_publisher" name="cam_link_broadcaster" args="-0.454 0.059 -0.570 -1.5708 0.0 0.785 /camera_link /d435_link 1" />
+    <node pkg="tf" type="static_transform_publisher" name="cam_link_broadcaster_1" args="-0.544 0.144 -0.607 -1.5708 0.0 0.785 /camera_link /d435_link 1" />
+
+    <node pkg="tf" type="static_transform_publisher" name="cam_link_broadcaster_2" args="0.11184 -0.03858 0.09906 -1.5708 0 0 /d435_link /front_d435_link 1" />
+
+    <node pkg="image_view" type="image_view" name="side_viewer" >
+        <remap from="image" to="/d435/color/image_raw"/>
+    </node>
+
+    <node pkg="image_view" type="image_view" name="front_viewer" >
+        <remap from="image" to="/front_d435/color/image_raw"/>
+    </node>
+
+    <node pkg="image_view" type="image_view" name="back_viewer" >
+        <remap from="image" to="/camera/color/image_raw"/>
+    </node>
+
 </launch>
