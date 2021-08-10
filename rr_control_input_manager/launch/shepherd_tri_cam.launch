@@ -1,7 +1,7 @@
 <launch>
     <arg name="offline"          default="false"/>
     <arg name="d435_cloud"   default="false" />
-    <arg name="d435_infra" default="true" />
+    <arg name="d435_infra" default="false" />
     <include unless="$(arg offline)" 
         file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="serial_no"   value="033322070540"/>
