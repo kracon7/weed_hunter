@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Author: Nick Fragale
 # Description: This script manages cmd_vel from multiple sources so that they don't over-ride eachother, and so that soft E-stop can works from multiple sources. 
@@ -67,7 +67,7 @@ class CmdVelManager(object):
         fleet_manager_time_elapsed = current_time - self.last_fleet_manager_command_time
         joy_time_elapsed = current_time - self.last_joy_command_time
 
-        if joy_time_elapsed.to_sec > 2:
+        if joy_time_elapsed.to_sec() > 2:
             self.lock_release_cb()
 
 
