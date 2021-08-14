@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rr_control_input_manager)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL 1.10 REQUIRED COMPONENTS common io visualization)
+find_package(PCL 1.8 REQUIRED COMPONENTS common io visualization)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures

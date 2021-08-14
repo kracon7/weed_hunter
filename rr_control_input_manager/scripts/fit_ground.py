@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/jc/Envs/py36/bin/python3.6
 
 import os
 import sys
@@ -100,8 +100,8 @@ class FitGround(object):
 
         np_color = self.image_to_numpy(color)
         np_depth = self.image_to_numpy(depth).astype('float32') * 1e-3
-
-        assert (np_color.shape[0] == self.im_h) and (np_color.shape[1] == self.im_w)
+        assert (np_color.shape[0] == self.im_h) and (np_color.shape[1] == self.im_w), \
+                'Image size incorrect, expected %d, %d but got %d, %d instead'%(self.im_h, self.im_w, np_color.shape[0], np.color.shape[1])
 
         mask = (np_color[:,:,1] > 0.5*np_color[:,:,0]) & (np_color[:,:,1] <= 0.95*np_color[:,:,0]) & \
                (np_color[:,:,1] > 0.6*np_color[:,:,2]) & (np_color[:,:,1] <= 0.9*np_color[:,:,2]) & \

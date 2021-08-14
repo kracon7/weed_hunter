@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/jc/Envs/py36/bin/python3.6
 
 # Author: Nick Fragale
 # Description: This script converts Joystick commands into Joint Velocity commands

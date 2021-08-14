@@ -1,4 +1,4 @@
-#!/home/rsn/Env/py36/bin/python3.6
+#!/home/rsn/Envs/py36/bin/python3.6
 
 
 import os
