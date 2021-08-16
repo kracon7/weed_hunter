@@ -92,6 +92,7 @@ class FitGround(object):
         xx, yy = np.meshgrid(x, y)
         points = np.stack([xx, yy], axis=2).reshape(-1,2)
         self.rays = np.dot(np.insert(points, 2, 1, axis=1), np.linalg.inv(self.K).T).reshape(self.im_h, self.im_w, 3)
+        rospy.loginfo('Ground fit initialization finished...')
 
     def callback(self, color, depth, camera_info):
         # Solve all of perception here...
