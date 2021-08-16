@@ -92,13 +92,9 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Extract images from a ROS bag.")
     parser.add_argument("--bag_file", help="Input ROS bag.")
-    parser.add_argument("--output_dir", help="Output directory.")
     parser.add_argument("--max_num", default=-1, type=int, help='Maximum number of messages to extract')
 
     args = parser.parse_args()
-
-    if not os.path.isdir(args.output_dir):
-        os.makedirs(args.output_dir)
 
     bag = rosbag.Bag(args.bag_file, "r")
     count = 0
