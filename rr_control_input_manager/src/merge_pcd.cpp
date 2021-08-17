@@ -66,7 +66,6 @@ class PointCloudMerger
     PointCloudMerger(ros::NodeHandle *nh):
     tfListener_(tf_buffer_),
     target_frame_("map")
-
     {
         sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 70,
                         &PointCloudMerger::pointCloudCallback, this);

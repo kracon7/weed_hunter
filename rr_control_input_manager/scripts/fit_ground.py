@@ -74,12 +74,12 @@ class FitGround(object):
 
         color_sub = message_filters.Subscriber('/front_d435/color/image_raw', Image)
         depth_sub = message_filters.Subscriber('/front_d435/aligned_depth_to_color/image_raw', Image)
-        info_sub = message_filters.Subscriber('/front_d435/aligned_depth_to_color/camera_info', CameraInfo)
         # self.filtered_color_pub = rospy.Publisher('/filtered_color', Image)
         # self.filtered_color_msg = Image()
         self.pc2_pub = rospy.Publisher("point_cloud2", PointCloud2, queue_size=2)
 
-        ts = message_filters.TimeSynchronizer([color_sub, depth_sub, info_sub], 1)
+        # ts = message_filters.TimeSynchronizer([color_sub, depth_sub, info_sub], 1)
+        ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 1, 1)
         ts.registerCallback(self.callback)
 
         self.im_w = 848
@@ -94,9 +94,9 @@ class FitGround(object):
         self.rays = np.dot(np.insert(points, 2, 1, axis=1), np.linalg.inv(self.K).T).reshape(self.im_h, self.im_w, 3)
         rospy.loginfo('Ground fit initialization finished...')
 
-    def callback(self, color, depth, camera_info):
+    def callback(self, color, depth):
         # Solve all of perception here...
-        time = camera_info.header.stamp.secs
+        time = color.header.stamp.secs
         rospy.loginfo('Received frame at time: %d'%(time))
 
         np_color = self.image_to_numpy(color)
