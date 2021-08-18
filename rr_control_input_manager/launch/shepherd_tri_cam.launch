@@ -1,5 +1,6 @@
 <launch>
     <arg name="offline"          default="false"/>
+    <arg name="d435_depth"    default="false" />
     <arg name="d435_cloud"   default="false" />
     <arg name="d435_infra" default="false" />
     <include unless="$(arg offline)" 
@@ -9,8 +10,8 @@
         <arg name="align_depth" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>  
         
-        <!-- <arg name="gyro_fps"      value="400"/>
-        <arg name="accel_fps"     value="250"/> -->
+        <arg name="gyro_fps"      value="400"/>
+        <arg name="accel_fps"     value="250"/>
         <arg name="enable_gyro"   value="true"/>
         <arg name="enable_accel"  value="true"/>
 
@@ -19,20 +20,21 @@
     
     <include unless="$(arg offline)" 
         file="$(find realsense2_camera)/launch/rs_camera.launch">
-        <arg name="serial_no"   value="817512070887"/>
-        <arg name="camera"     value="d435"/>
-        <arg name="align_depth" value="true"/>
-        <arg name="enable_pointcloud" value="$(arg d435_cloud)"/>
-        <arg name="enable_sync"       value="$(arg d435_cloud)"/>        
-        <arg name="enable_infra"   value="$(arg d435_infra)" />
-        <arg name="enable_infra1"   value="$(arg d435_infra)" />
-        <arg name="enable_infra2"   value="$(arg d435_infra)" />
-        <arg name="depth_width"     value="848"/>
-        <arg name="depth_height"    value="480"/>
-        <arg name="depth_fps"       value="30"/>
-        <arg name="color_width"     value="848"/>
-        <arg name="color_height"    value="480"/>
-        <arg name="color_fps"       value="30"/>
+        <arg name="serial_no"          value="817512070887"/>
+        <arg name="camera"             value="d435"/>
+        <arg name="enable_depth"       value="$(arg d435_depth)" />
+        <arg name="align_depth"        value="$(arg d435_depth)"/>
+        <arg name="enable_pointcloud"  value="$(arg d435_cloud)"/>
+        <arg name="enable_sync"        value="$(arg d435_cloud)"/>        
+        <arg name="enable_infra"       value="$(arg d435_infra)" />
+        <arg name="enable_infra1"      value="$(arg d435_infra)" />
+        <arg name="enable_infra2"      value="$(arg d435_infra)" />
+        <arg name="depth_width"        value="848"/>
+        <arg name="depth_height"       value="480"/>
+        <arg name="depth_fps"          value="30"/>
+        <arg name="color_width"        value="848"/>
+        <arg name="color_height"       value="480"/>
+        <arg name="color_fps"          value="30"/>
   
     </include>
 

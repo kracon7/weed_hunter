@@ -13,6 +13,14 @@ from sensor_msgs import point_cloud2
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
 import message_filters
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import transforms
+from torch.utils.data import DataLoader
+from torch.utils.data.dataset import Dataset
+from utils.model import CorridorNet
+
 name_to_dtypes = {
     "rgb8":    (np.uint8,  3),
     "rgba8":   (np.uint8,  4),
@@ -93,6 +101,9 @@ class FitGround(object):
         points = np.stack([xx, yy], axis=2).reshape(-1,2)
         self.rays = np.dot(np.insert(points, 2, 1, axis=1), np.linalg.inv(self.K).T).reshape(self.im_h, self.im_w, 3)
         rospy.loginfo('Ground fit initialization finished...')
+
+        rospy.loginfo('Loading network module...')
+        self.corridor_net = CorridorNet().to('cuda')
 
     def callback(self, color, depth):
         # Solve all of perception here...
