@@ -13,12 +13,12 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   std_msgs
-  pcl_conversions
+  # pcl_conversions
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL 1.8 REQUIRED COMPONENTS common io visualization)
+# find_package(PCL 1.8 REQUIRED COMPONENTS common io visualization)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -122,15 +122,15 @@ catkin_package(
   include_directories(
       include
       ${catkin_INCLUDE_DIRS}
-      ${PCL_INCLUDE_DIRS}
+      # ${PCL_INCLUDE_DIRS}
       )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/rr_control_input_manager.cpp
 # )
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+# link_directories(${PCL_LIBRARY_DIRS})
+# add_definitions(${PCL_DEFINITIONS})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -139,19 +139,19 @@ add_definitions(${PCL_DEFINITIONS})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 ## Declare a C++ executable
-add_executable(merge_pcd src/merge_pcd.cpp)
+# add_executable(merge_pcd src/merge_pcd.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(velodyne_data_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(merge_pcd
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    ${PCL_COMMON_LIBRARIES}
-    ${PCL_IO_LIBRARIES}
-    ${PCL_VISUALIZATION_LIBRARIES}
-)
+# target_link_libraries(merge_pcd
+#     ${catkin_LIBRARIES}
+#     ${PCL_LIBRARIES}
+#     ${PCL_COMMON_LIBRARIES}
+#     ${PCL_IO_LIBRARIES}
+#     ${PCL_VISUALIZATION_LIBRARIES}
+# )
 
 #############
 ## Install ##
