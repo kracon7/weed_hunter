@@ -12,6 +12,7 @@ import open3d as o3d
 from std_msgs.msg import Int32, Float32, Bool, Header
 from sensor_msgs import point_cloud2
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
+from rr_control_input_manager.msg import CornPlane
 import message_filters
 
 import torch
@@ -87,6 +88,10 @@ class FitGround(object):
         # self.filtered_color_msg = Image()
         self.pc2_pub = rospy.Publisher("point_cloud2", PointCloud2, queue_size=2)
 
+        # publish corn plane message
+        self.plane_pub = rospy.Publisher("corn_plane", CornPlane, queue_size=1)
+        self.plane_msg = CornPlane()
+
         # ts = message_filters.TimeSynchronizer([color_sub, depth_sub, info_sub], 1)
         ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 1, 1)
         ts.registerCallback(self.callback)
@@ -139,6 +144,20 @@ class FitGround(object):
         pred = self.corridor_net.forward(torch_color).view(-1)
         print("Took %.5fsec to predict %.3f %.3f %.3f %.3f"%(
                 time.time()-now, pred[0], pred[1], pred[2], pred[3]))
+
+        # write corn plane message and publish
+        self.plane_msg.header.stamp = color.header.stamp
+        self.plane_msg.pt.x = 0.1
+        self.plane_msg.pt.y = 0.2
+        self.plane_msg.pt.z = 0.1
+        self.plane_msg.vy.x = 0.
+        self.plane_msg.vy.y = 1.
+        self.plane_msg.vy.z = 0.
+        self.plane_msg.vz.x = 0.
+        self.plane_msg.vz.y = 0.
+        self.plane_msg.vz.z = 1.
+        self.plane_pub.publish(self.plane_msg)
+        
 
     def image_to_numpy(self, msg):
         if not msg.encoding in name_to_dtypes:
