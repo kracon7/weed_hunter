@@ -8,6 +8,7 @@ import struct
 import time
 import numpy as np
 import datetime as dt
+import open3d as o3d
 from std_msgs.msg import Int32, Float32, Bool, Header
 from sensor_msgs import point_cloud2
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
@@ -107,25 +108,37 @@ class FitGround(object):
 
     def callback(self, color, depth):
         # Solve all of perception here...
-        time = color.header.stamp.secs
-        rospy.loginfo('Received frame at time: %d'%(time))
+        t_sec = color.header.stamp.secs
+        rospy.loginfo('Received frame at time: %d'%(t_sec))
 
         np_color = self.image_to_numpy(color)
         np_depth = self.image_to_numpy(depth).astype('float32') * 1e-3
         assert (np_color.shape[0] == self.im_h) and (np_color.shape[1] == self.im_w), \
                 'Image size incorrect, expected %d, %d but got %d, %d instead'%(self.im_h, self.im_w, np_color.shape[0], np.color.shape[1])
 
+        # color thresholding to find ground points
         mask = (np_color[:,:,1] > 0.5*np_color[:,:,0]) & (np_color[:,:,1] <= 0.95*np_color[:,:,0]) & \
                (np_color[:,:,1] > 0.6*np_color[:,:,2]) & (np_color[:,:,1] <= 0.9*np_color[:,:,2]) & \
                (np_color[:,:,2] <= 100)
 
         idx = np.where(mask)
         ground_points = self.rays[idx[0], idx[1]] * np_depth[idx[0], idx[1]].reshape(-1,1)
-        ground_colors = np_color[idx[0], idx[1]]
-        pc2 = self.points_to_pointcloud(ground_points, ground_colors)
-        pc2.header.stamp = rospy.Time.now()
-        self.pc2_pub.publish(pc2)
-
+        
+        # fit ground points to find plane
+        now = time.time()
+        pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(ground_points))
+        plane_model, _ = pcd.segment_plane(distance_threshold=0.03,
+                                             ransac_n=3,
+                                             num_iterations=100)
+        print("Took %.5fsec to find plane %.3f %.3f %.3f %.3f"%(
+                time.time()-now, plane_model[0], plane_model[1], plane_model[2], plane_model[3]))
+        
+        # run network on rgb image to predict vanishing point and corn lines
+        now = time.time()
+        torch_color = torch.from_numpy(np_color.transpose((2,0,1))).float().unsqueeze(0).cuda()
+        pred = self.corridor_net.forward(torch_color).view(-1)
+        print("Took %.5fsec to predict %.3f %.3f %.3f %.3f"%(
+                time.time()-now, pred[0], pred[1], pred[2], pred[3]))
 
     def image_to_numpy(self, msg):
         if not msg.encoding in name_to_dtypes:
