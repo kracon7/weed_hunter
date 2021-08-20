@@ -145,17 +145,23 @@ class FitGround(object):
         print("Took %.5fsec to predict %.3f %.3f %.3f %.3f"%(
                 time.time()-now, pred[0], pred[1], pred[2], pred[3]))
 
+    def publish_plane(self, stamp, pt, vy, vz):
+        '''
+        Publish the corn plane in front camera frame
+        '''
+        # TODO check unlikely cases of the plane model
+
         # write corn plane message and publish
-        self.plane_msg.header.stamp = color.header.stamp
-        self.plane_msg.pt.x = 0.1
-        self.plane_msg.pt.y = 0.2
-        self.plane_msg.pt.z = 0.1
-        self.plane_msg.vy.x = 0.
-        self.plane_msg.vy.y = 1.
-        self.plane_msg.vy.z = 0.
-        self.plane_msg.vz.x = 0.
-        self.plane_msg.vz.y = 0.
-        self.plane_msg.vz.z = 1.
+        self.plane_msg.header.stamp = stamp
+        self.plane_msg.pt.x = pt[0]
+        self.plane_msg.pt.y = pt[1]
+        self.plane_msg.pt.z = pt[2]
+        self.plane_msg.vy.x = vy[0]
+        self.plane_msg.vy.y = vy[1]
+        self.plane_msg.vy.z = vy[2]
+        self.plane_msg.vz.x = vz[0]
+        self.plane_msg.vz.y = vz[1]
+        self.plane_msg.vz.z = vz[2]
         self.plane_pub.publish(self.plane_msg)
         
 
