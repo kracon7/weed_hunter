@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 import rospy
+import pickle
 import struct
 import time
 import cv2
@@ -112,6 +113,18 @@ class FitGround(object):
 
         rospy.loginfo('Loading network module...')
         self.corridor_net = CorridorNet().to('cuda')
+        checkpoint_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                      'utils/corridor_net_chckpt.pt')
+        if os.path.isfile(checkpoint_path):
+            rospy.loginfo('Loading network parameters...')
+            checkpoint = torch.load(checkpoint_path, map_location='cuda')
+            self.corridor_net.load_state_dict(checkpoint['state_dict'])
+            self.corridor_stat = pickle.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                      'utils/corridor_stat.pkl') ,'rb'))
+        else:
+            rospy.loginfo('No checkpoint file found, using random initialization')
+
+        self.outpur_dir = '/home/jc/tmp/corn_corridor_plot'
 
     def callback(self, side_color, color, depth):
         # Solve all of perception here...
@@ -138,15 +151,40 @@ class FitGround(object):
         plane_model, _ = pcd.segment_plane(distance_threshold=0.03,
                                              ransac_n=3,
                                              num_iterations=100)
-        print("Took %.5fsec to find plane %.3f %.3f %.3f %.3f"%(
-                time.time()-now, plane_model[0], plane_model[1], plane_model[2], plane_model[3]))
+        ga, gb, gc, gd = plane_model
+        print("Took %.5fsec to find plane %.3f %.3f %.3f %.3f"%(time.time()-now, ga, gb, gc, gd))
+        vy = plane_model[:3]
         
         # run network on rgb image to predict vanishing point and corn lines
         now = time.time()
         torch_color = torch.from_numpy(np_color.transpose((2,0,1))).float().unsqueeze(0).cuda()
-        pred = self.corridor_net.forward(torch_color).view(-1)
+        pred = self.corridor_net.forward(torch_color).view(-1).detach().cpu().numpy()
+        pred = pred * self.corridor_stat['std'] + self.corridor_stat['mean']
         print("Took %.5fsec to predict %.3f %.3f %.3f %.3f"%(
                 time.time()-now, pred[0], pred[1], pred[2], pred[3]))
+        vpz = pred[:2]
+        vz = np.linalg.inv(self.K) @ np.array([vpz[0], vpz[1], 1])
+        vz = vz / np.linalg.norm(vz)
+
+        # find pt on intersection line
+        vpzx, vpzy = pred[0], pred[1]
+        theta = np.deg2rad(pred[2])
+        l = 200
+        # find pt1
+        dx, dy = l * np.cos(theta), l * np.sin(theta)
+        if dy < 0:
+            dx, dy = -dx, -dy
+        pixel_u, pixel_v = vpzx+dx, vpzy+dy
+        ray = np.linalg.inv(self.K) @ np.array([pixel_u, pixel_v, 1])
+        pt = -(gd / (ray[0]*ga + ray[1]*gb + ray[2]*gc)) * ray
+
+        cv2.imwrite(os.path.join(self.outpur_dir, 'side',
+                '%d_%d.png'%(color.header.stamp.secs, color.header.stamp.nsecs)), np_side_color)
+        cv2.imwrite(os.path.join(self.outpur_dir, 'front',
+                '%d_%d.png'%(color.header.stamp.secs, color.header.stamp.nsecs)), np_color)
+        pickle.dump([pt, vy, vz, pred], open(os.path.join(self.outpur_dir, 'corridor',
+                '%d_%d.pkl'%(color.header.stamp.secs, color.header.stamp.nsecs)), 'wb'))
+
 
     def publish_plane(self, stamp, pt, vy, vz):
         '''
