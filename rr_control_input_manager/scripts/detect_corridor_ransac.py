@@ -6,6 +6,7 @@ import argparse
 import rospy
 import struct
 import time
+import pickle
 import numpy as np
 import datetime as dt
 import open3d as o3d
@@ -111,6 +112,17 @@ class FitGround(object):
         rospy.loginfo('Loading network module...')
         self.corridor_net = CorridorNet().to('cuda')
 
+        rospy.loginfo("Loading network parameters...")
+        checkpoint_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils/corridor_net_chckpt.pt')
+        checkpoint = torch.load(checkpoint_path, map_location='cuda')
+        self.corridor_net.load_state_dict(checkpoint['state_dict'])
+
+        rospy.loginfo("Loading network prediction stat...")
+        stat_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils/corridor_stat.pkl')
+        self.stat = pickle.load(open(stat_path,'rb'))
+
+        rospy.loginfo("Initialization Done!")
+
     def callback(self, color, depth):
         # Solve all of perception here...
         t_sec = color.header.stamp.secs
@@ -121,13 +133,15 @@ class FitGround(object):
         assert (np_color.shape[0] == self.im_h) and (np_color.shape[1] == self.im_w), \
                 'Image size incorrect, expected %d, %d but got %d, %d instead'%(self.im_h, self.im_w, np_color.shape[0], np.color.shape[1])
 
+        points = self.rays * np_depth.reshape(self.im_h, self.im_w, 1)
+
         # color thresholding to find ground points
         mask = (np_color[:,:,1] > 0.5*np_color[:,:,0]) & (np_color[:,:,1] <= 0.95*np_color[:,:,0]) & \
                (np_color[:,:,1] > 0.6*np_color[:,:,2]) & (np_color[:,:,1] <= 0.9*np_color[:,:,2]) & \
                (np_color[:,:,2] <= 100)
-
         idx = np.where(mask)
-        ground_points = self.rays[idx[0], idx[1]] * np_depth[idx[0], idx[1]].reshape(-1,1)
+        # ground_points = self.rays[idx[0], idx[1]] * np_depth[idx[0], idx[1]].reshape(-1,1)
+        ground_points = points[idx[0], idx[1]]
         
         # fit ground points to find plane
         now = time.time()
@@ -135,15 +149,37 @@ class FitGround(object):
         plane_model, _ = pcd.segment_plane(distance_threshold=0.03,
                                              ransac_n=3,
                                              num_iterations=100)
+        # if surface normal direction points downward
+        if plane_model[1] < 0:
+            plane_model = - plane_model
         print("Took %.5fsec to find plane %.3f %.3f %.3f %.3f"%(
                 time.time()-now, plane_model[0], plane_model[1], plane_model[2], plane_model[3]))
         
         # run network on rgb image to predict vanishing point and corn lines
         now = time.time()
         torch_color = torch.from_numpy(np_color.transpose((2,0,1))).float().unsqueeze(0).cuda()
-        pred = self.corridor_net.forward(torch_color).view(-1)
+        pred = self.corridor_net.forward(torch_color).view(-1).detach().cpu().numpy()
+        pred = pred * self.stat['std'] + self.stat['mean']
         print("Took %.5fsec to predict %.3f %.3f %.3f %.3f"%(
                 time.time()-now, pred[0], pred[1], pred[2], pred[3]))
+
+        # use height thresholding to find corridor points
+        mask = (points[:,:,0] > -0.5) & (points[:,:,0] < 0.5) & \
+               (points[:,:,1] > -0.05) & (points[:,:,1] < -plane_model[3]-.05) & \
+               (points[:,:,2] > 0.1) & (points[:,:,2] < 3)
+        idx = np.where(mask)
+        corridor_points = points[idx[0], idx[1]]
+
+        # paint ground green and paint corridor red
+        ground_color = np.zeros_like(ground_points).astype('uint8')
+        ground_color[:,0] = 255
+        corridor_color = np.zeros_like(corridor_points).astype('uint8')
+        corridor_color[:,1] = 255
+
+        pcd = self.points_to_pointcloud(np.concatenate([ground_points, corridor_points], axis=0),
+                            np.concatenate([ground_color, corridor_color], axis=0))
+        self.pc2_pub.publish(pcd)
+
 
     def publish_plane(self, stamp, pt, vy, vz):
         '''
