@@ -134,8 +134,11 @@ class FitGround(object):
                 'Image size incorrect, expected %d, %d but got %d, %d instead'%(self.im_h, self.im_w, np_color.shape[0], np.color.shape[1])
 
         points = self.rays * np_depth.reshape(self.im_h, self.im_w, 1)
+        xyzrgb = np.concatenate([points, np_color], axis=2)
 
-        # color thresholding to find ground points
+        # find ground points
+        ground_candidate = xyzrgb[xyzrgb[:,:,1]>0.1]
+        pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(ground_candidate))
         mask = (np_color[:,:,1] > 0.5*np_color[:,:,0]) & (np_color[:,:,1] <= 0.95*np_color[:,:,0]) & \
                (np_color[:,:,1] > 0.6*np_color[:,:,2]) & (np_color[:,:,1] <= 0.9*np_color[:,:,2]) & \
                (np_color[:,:,2] <= 100)
@@ -165,8 +168,8 @@ class FitGround(object):
 
         # use height thresholding to find corridor points
         mask = (points[:,:,0] > -0.5) & (points[:,:,0] < 0.5) & \
-               (points[:,:,1] > -0.05) & (points[:,:,1] < -plane_model[3]-.05) & \
-               (points[:,:,2] > 0.1) & (points[:,:,2] < 3)
+               (points[:,:,1] > -0.1) & (points[:,:,1] < -plane_model[3]-0.1) & \
+               (points[:,:,2] > 0.1) & (points[:,:,2] < 2)
         idx = np.where(mask)
         corridor_points = points[idx[0], idx[1]]
 
@@ -228,7 +231,9 @@ class FitGround(object):
             x, y, z = pt
             r, g, b = color
             rgb = struct.unpack('I', struct.pack('BBBB', b, g, r, 255))[0]
-            points.append([x, y, z, rgb])
+
+            # CAUTION! switched y an z for rviz visualization purpose
+            points.append([x, z, y, rgb])
 
         fields = [PointField('x', 0, PointField.FLOAT32, 1),
                   PointField('y', 4, PointField.FLOAT32, 1),
