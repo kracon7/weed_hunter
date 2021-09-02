@@ -1,21 +1,37 @@
 <launch>
-    <arg name="offline"          default="false"/>
-    <arg name="d435_depth"    default="false" />
-    <arg name="d435_cloud"   default="false" />
-    <arg name="d435_infra" default="false" />
+    <arg name="offline"            default="false"/>
+    <arg name="d435_depth"         default="false"/>
+    <arg name="d435_infra"         default="false"/>
+
+    <arg name="camera_infra"       default="false"/>
+    <arg name="camera_emitter_off" default="false"/>
+    <arg name="front_d435_infra"   default="false"/>
+
     <include unless="$(arg offline)" 
         file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="serial_no"   value="033322070540"/>
         <arg name="camera"     value="camera"/>
         <arg name="align_depth" value="true"/>
-        <arg name="linear_accel_cov" value="1.0"/>  
+        <arg name="linear_accel_cov" value="1.0"/> 
+
+        <arg name="depth_width"        value="848"/>
+        <arg name="depth_height"       value="480"/>
+        <arg name="depth_fps"          value="30"/>
+        <arg name="color_width"        value="848"/>
+        <arg name="color_height"       value="480"/>
+        <arg name="color_fps"          value="30"/> 
         
         <arg name="gyro_fps"      value="400"/>
         <arg name="accel_fps"     value="250"/>
         <arg name="enable_gyro"   value="true"/>
-        <arg name="enable_accel"  value="true"/>
+        <arg name="enable_accel"  value="true"/>        
+
+        <arg name="enable_infra"       value="$(arg camera_infra)" />
+        <arg name="enable_infra1"      value="$(arg camera_infra)" />
+        <arg name="enable_infra2"      value="$(arg camera_infra)" />
 
         <arg name="unite_imu_method" value="linear_interpolation"/>
+        <arg name="emitter_off"   value="$(arg camera_emitter_off)" />
     </include>
     
     <include unless="$(arg offline)" 
@@ -23,9 +39,7 @@
         <arg name="serial_no"          value="817512070887"/>
         <arg name="camera"             value="d435"/>
         <arg name="enable_depth"       value="$(arg d435_depth)" />
-        <arg name="align_depth"        value="$(arg d435_depth)"/>
-        <arg name="enable_pointcloud"  value="$(arg d435_cloud)"/>
-        <arg name="enable_sync"        value="$(arg d435_cloud)"/>        
+        <arg name="align_depth"        value="$(arg d435_depth)" />        
         <arg name="enable_infra"       value="$(arg d435_infra)" />
         <arg name="enable_infra1"      value="$(arg d435_infra)" />
         <arg name="enable_infra2"      value="$(arg d435_infra)" />
@@ -40,12 +54,12 @@
 
     <include unless="$(arg offline)" 
         file="$(find realsense2_camera)/launch/rs_camera.launch">
-        <arg name="serial_no"   value="817412070608"/>
-        <arg name="camera"     value="front_d435"/>
-        <arg name="align_depth" value="true"/>        
-        <arg name="enable_infra"   value="$(arg d435_infra)" />
-        <arg name="enable_infra1"   value="$(arg d435_infra)" />
-        <arg name="enable_infra2"   value="$(arg d435_infra)" />
+        <arg name="serial_no"       value="817412070608"/>
+        <arg name="camera"          value="front_d435"/>
+        <arg name="align_depth"     value="true"/>        
+        <arg name="enable_infra"    value="$(arg front_d435_infra)" />
+        <arg name="enable_infra1"   value="$(arg front_d435_infra)" />
+        <arg name="enable_infra2"   value="$(arg front_d435_infra)" />
         <arg name="depth_width"     value="848"/>
         <arg name="depth_height"    value="480"/>
         <arg name="depth_fps"       value="30"/>
@@ -66,6 +80,9 @@
         <remap from="image" to="/front_d435/color/image_raw"/>
     </node>
 
+    <!-- <node pkg="image_view" type="image_view" name="back_viewer" >
+        <remap from="image" to="/camera/infra1/image_rect_raw"/>
+    </node> -->
     <node pkg="image_view" type="image_view" name="back_viewer" >
         <remap from="image" to="/camera/color/image_raw"/>
     </node>
