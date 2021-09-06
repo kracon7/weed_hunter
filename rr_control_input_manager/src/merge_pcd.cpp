@@ -19,14 +19,16 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl/conversions.h>
-#include <pcl_ros/transforms.h>
 #include <pcl/PCLPointCloud2.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl_ros/transforms.h>
+#include <pcl_ros/point_cloud.h>
 
 
 using namespace std;
@@ -61,6 +63,7 @@ class PointCloudMerger
     ros::Subscriber sub;
     int counter;
     int every_frames;
+    pcl::VoxelGrid<pcl::PointXYZRGB> sor;
 
     public:
     PointCloudMerger(ros::NodeHandle *nh):
@@ -70,7 +73,7 @@ class PointCloudMerger
         sub = nh->subscribe<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 70,
                         &PointCloudMerger::pointCloudCallback, this);
         counter = 0;
-        every_frames = 20;
+        every_frames = 5;
     }
 
     void pointCloudCallback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)
@@ -100,13 +103,23 @@ class PointCloudMerger
 
             *globalCloud += *pcl_cloud;
 
+            // voxel down sample of the point cloud
+            sor.setInputCloud (globalCloud);
+            sor.setLeafSize (0.005f, 0.005, 0.005f);
+            sor.filter (*globalCloud);
+
             ROS_INFO("Frame %d processed.", counter);
 
             sleep(0.1);    
         }
 
         counter++;
-        
+
+        if(counter == 40)
+        {
+            pcl::io::savePCDFileASCII("/home/jc/corn.pcd", *globalCloud);
+        }
+  
     }
 
 };

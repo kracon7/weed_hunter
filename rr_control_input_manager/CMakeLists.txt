@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL 1.8 REQUIRED COMPONENTS common io visualization)
+find_package(PCL 1.8 REQUIRED COMPONENTS common io visualization filters)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -152,6 +152,7 @@ target_link_libraries(merge_pcd
     ${PCL_COMMON_LIBRARIES}
     ${PCL_IO_LIBRARIES}
     ${PCL_VISUALIZATION_LIBRARIES}
+    ${PCL_FILTERS_LIBRARIES}
 )
 
 #############
