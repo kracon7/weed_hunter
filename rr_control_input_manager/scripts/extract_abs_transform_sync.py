@@ -22,8 +22,9 @@ from utils.cv_bridge import image_to_numpy
 
 class Frame():
     """sync-ed frame for side and front view"""
-    def __init__(self, front_xyzrgb, side_color, stamp, pose):
-        self.front_xyzrgb = front_xyzrgb
+    def __init__(self, front_color, front_depth, side_color, stamp, pose):
+        self.front_color = front_color
+        self.front_depth = front_depth
         self.side_color = side_color
         self.stamp = stamp
         self.pose = pose
@@ -32,10 +33,10 @@ class FrameListener():
     """docstring for frame_listener"""
     def __init__(self, args):
         self.output_dir = args.output_dir
-        self.front_rgbd_dir = os.path.join(args.output_dir, 'front_rgbd')
+        self.front_color_dir = os.path.join(args.output_dir, 'front_color')
         self.side_color_dir = os.path.join(args.output_dir, 'side_color')
         self.frame_dir = os.path.join(args.output_dir, 'frame')
-        for d in [self.front_rgbd_dir, self.side_color_dir, self.frame_dir]:
+        for d in [self.front_color_dir, self.side_color_dir, self.frame_dir]:
             if not os.path.isdir(d):
                 os.makedirs(d)
 
@@ -90,12 +91,12 @@ class FrameListener():
             np_front_depth = image_to_numpy(front_depth).astype('float32') * 1e-3
             np_side_color = image_to_numpy(side_color)
             
-            points = self.rays * np_front_depth.reshape(self.im_h, self.im_w, 1)
-            front_xyzrgb = np.concatenate([points, np_front_color], axis=2)
+            # points = self.rays * np_front_depth.reshape(self.im_h, self.im_w, 1)
+            # front_xyzrgb = np.concatenate([points, np_front_color], axis=2)
 
-            frame = Frame(front_xyzrgb, np_side_color, side_color.header.stamp, pose)
+            frame = Frame(front_color, front_depth, np_side_color, side_color.header.stamp, pose)
 
-            cv2.imwrite(os.path.join(self.front_rgbd_dir, 'frame_%07d.png'%(self.count)), np_front_color)
+            cv2.imwrite(os.path.join(self.front_color_dir, 'frame_%07d.png'%(self.count)), np_front_color)
             cv2.imwrite(os.path.join(self.side_color_dir, 'frame_%07d.png'%(self.count)), np_side_color)
             pickle.dump(frame, open(os.path.join(self.frame_dir, 'frame_%07d.pkl'%(self.count)),'wb'))
 
@@ -105,7 +106,7 @@ class FrameListener():
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run robot closeloop simulation for 2000 times')
-    parser.add_argument('--output_dir', default='/home/jc/tmp/pred_distance', help='directory to store images')
+    parser.add_argument('--output_dir', default='/home/jc/tmp/offline_frames', help='directory to store images')
     args, unknown = parser.parse_known_args()
 
     rospy.init_node('listener', anonymous=True)
