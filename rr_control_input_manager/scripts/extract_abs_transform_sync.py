@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.7
+#!/home/jc/Envs/py36/bin/python3.6
 
 import os
 import sys
@@ -6,9 +6,11 @@ import argparse
 import rospy
 import struct
 import time
+import cv2
 import numpy as np
 import datetime as dt
 import tf2_ros
+import pickle
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int32, Float32, Bool, Header
 from sensor_msgs import point_cloud2
@@ -17,14 +19,23 @@ from nav_msgs.msg import Odometry
 import message_filters
 from utils.cv_bridge import image_to_numpy
 
+
+class Frame():
+    """sync-ed frame for side and front view"""
+    def __init__(self, front_xyzrgb, side_color, stamp, pose):
+        self.front_xyzrgb = front_xyzrgb
+        self.side_color = side_color
+        self.stamp = stamp
+        self.pose = pose
+
 class FrameListener():
     """docstring for frame_listener"""
     def __init__(self, args):
         self.output_dir = args.output_dir
         self.front_rgbd_dir = os.path.join(args.output_dir, 'front_rgbd')
         self.side_color_dir = os.path.join(args.output_dir, 'side_color')
-        self.transform_dir = os.path.join(args.output_dir, 'transform')
-        for d in [self.front_rgbd_dir, self.side_color_dir, self.transform_dir]:
+        self.frame_dir = os.path.join(args.output_dir, 'frame')
+        for d in [self.front_rgbd_dir, self.side_color_dir, self.frame_dir]:
             if not os.path.isdir(d):
                 os.makedirs(d)
 
@@ -34,7 +45,7 @@ class FrameListener():
         depth_sub = message_filters.Subscriber('/front_d435/aligned_depth_to_color/image_raw', Image)
         side_sub = message_filters.Subscriber("/d435/color/image_raw", Image)
         
-        ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub, side_sub], 1, 1)
+        ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub, side_sub], 100, 1)
         ts.registerCallback(self.callback)
 
         self.tfBuffer = tf2_ros.Buffer(rospy.Duration(20))
@@ -52,64 +63,45 @@ class FrameListener():
         xx, yy = np.meshgrid(x, y)
         points = np.stack([xx, yy], axis=2).reshape(-1,2)
         self.rays = np.dot(np.insert(points, 2, 1, axis=1), np.linalg.inv(self.K).T).reshape(self.im_h, self.im_w, 3)
-        
+        rospy.loginfo('Initialization done!')
 
-    def callback(self, front_color, front_depth, data):
-
-        # rospy.loginfo(rospy.get_caller_id() + "I heard")
+    def callback(self, front_color, front_depth, side_color):
         
-        frame_id = data.header.frame_id
-        # print("side color frame %s timestamp is: %d, %d"%(frame_id, data.header.stamp.secs, data.header.stamp.nsecs))
+        frame_id = side_color.header.frame_id
+        t_sec = side_color.header.stamp.secs
+        t_nsec = side_color.header.stamp.nsecs
+        rospy.loginfo('Received frame with stamp: %d.%d'%(t_sec, t_nsec))
 
         try:
             transform = self.tfBuffer.lookup_transform(frame_id, 'map',
-                                     data.header.stamp)
+                                     side_color.header.stamp)
 
-            # compute the relative transformation
-            abs_x = transform.transform.translation.x
-            abs_y = transform.transform.translation.y
-            abs_z = transform.transform.translation.z
-            abs_quat = np.array([transform.transform.rotation.w,
+            pose = np.array([transform.transform.translation.x,
+                             transform.transform.translation.y,
+                             transform.transform.translation.z,
+                             transform.transform.rotation.w,
                              transform.transform.rotation.x,
                              transform.transform.rotation.y,
                              transform.transform.rotation.z])
-            print("x y z: %f %f %f "%(abs_x, abs_y, abs_z))
-
             self.count += 1
 
             # convert images to numpy array
             np_front_color = image_to_numpy(front_color)
             np_front_depth = image_to_numpy(front_depth).astype('float32') * 1e-3
-            assert (np_front_color.shape[0] == self.im_h) and (np_front_color.shape[1] == self.im_w), \
-                    'Image size incorrect, expected %d, %d but got %d, %d instead'%(self.im_h, self.im_w, np_color.shape[0], np.color.shape[1])
-
+            np_side_color = image_to_numpy(side_color)
+            
             points = self.rays * np_front_depth.reshape(self.im_h, self.im_w, 1)
-            xyzrgb = np.concatenate([points, np_front_color], axis=2)
-            np.save(os.path.join(self.front_rgbd_dir, 'frame_%07d.npy'%(self.count)), xyzrgb)
+            front_xyzrgb = np.concatenate([points, np_front_color], axis=2)
 
-            np_side_color = image_to_numpy(data)
-            np.save(os.path.join(self.side_color_dir, 'frame_%07d.npy'%(self.count)), np_side_color)
+            frame = Frame(front_xyzrgb, np_side_color, side_color.header.stamp, pose)
 
-            # save relative transformation
-            T = np.concatenate([np.array([abs_x, abs_y, abs_z]), abs_quat])
-            np.save(os.path.join(self.transform_dir, 'frame_%07d.npy'%(self.count)), T)
+            cv2.imwrite(os.path.join(self.front_rgbd_dir, 'frame_%07d.png'%(self.count)), np_front_color)
+            cv2.imwrite(os.path.join(self.side_color_dir, 'frame_%07d.png'%(self.count)), np_side_color)
+            pickle.dump(frame, open(os.path.join(self.frame_dir, 'frame_%07d.pkl'%(self.count)),'wb'))
 
         except Exception as e:
             print(e)
-                
-
-
-
-    def quaternion_division(self, q, r):
-        qw, qx, qy, qz = q
-        rw, rx, ry, rz = r
-
-        tw = rw*qw + rx*qx + ry*qy + rz*qz
-        tx = rw*qx - rx*qw - ry*qz + rz*qy
-        ty = rw*qy + rx*qz - ry*qw - rz*qx
-        tz = rw*qz - rx*qy + ry*qx - rz*qw
-        return [tw, tx, ty, tz]
-
+            
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run robot closeloop simulation for 2000 times')
