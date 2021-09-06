@@ -36,7 +36,7 @@ class FrameListener():
         self.front_color_dir = os.path.join(args.output_dir, 'front_color')
         self.side_color_dir = os.path.join(args.output_dir, 'side_color')
         self.frame_dir = os.path.join(args.output_dir, 'frame')
-        for d in [self.front_color_dir, self.side_color_dir, self.frame_dir]:
+        for d in [self.output_dir, self.front_color_dir, self.side_color_dir, self.frame_dir]:
             if not os.path.isdir(d):
                 os.makedirs(d)
 
@@ -94,7 +94,7 @@ class FrameListener():
             # points = self.rays * np_front_depth.reshape(self.im_h, self.im_w, 1)
             # front_xyzrgb = np.concatenate([points, np_front_color], axis=2)
 
-            frame = Frame(front_color, front_depth, np_side_color, side_color.header.stamp, pose)
+            frame = Frame(np_front_color, np_front_depth, np_side_color, side_color.header.stamp, pose)
 
             cv2.imwrite(os.path.join(self.front_color_dir, 'frame_%07d.png'%(self.count)), np_front_color)
             cv2.imwrite(os.path.join(self.side_color_dir, 'frame_%07d.png'%(self.count)), np_side_color)
